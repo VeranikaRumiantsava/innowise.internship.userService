@@ -1,7 +1,12 @@
-<?xml version="1.1" encoding="UTF-8"?>
-<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.21.xsd">
 
-    <changeSet id="1" author="veronika-rumiansava">
+<changeSet id="1" author="veronika-rumiansava">
         <createTable tableName="users">
             <column autoIncrement="true" name="id" type="bigint">
                 <constraints nullable="false"
@@ -14,13 +19,18 @@
             <column name="surname" type="varchar(50)">
             </column>
             <column name="birth_date" type="date">
+                <constraints nullable="false"
+                             checkConstraint="birth_date &lt;= CURRENT_DATE"
+                             />
             </column>
             <column name="email" type="varchar(50)">
                 <constraints nullable="false"
                              unique="true"
+                             checkConstraint="email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'"
                 />
             </column>
         </createTable>
+
 
         <createTable tableName="card_info">
             <column autoIncrement="true" name="id" type="bigint">
@@ -35,16 +45,20 @@
                              referencedColumnNames="id"
                 />
             </column>
-            <column name="number" type="varchar(19)">
+            <column name="number" type="char(16)">
                 <constraints nullable="false"
                              unique="true"
+                             checkConstraint="number ~ '^\\d{16}$'"
                 />
             </column>
             <column name="holder" type="varchar(100)">
-                <constraints nullable="false" />
+                <constraints nullable="false"
+                />
             </column>
             <column name="expiration_date" type="char(5)">
-                <constraints nullable="false" />
+                <constraints nullable="false"
+                             checkConstraint="expiration_date ~ '^(0[1-9]|1[0-2])\\\\/\\d{2}$'"
+                />
             </column>
         </createTable>
 
@@ -52,4 +66,24 @@
             <column name="user_id"/>
         </createIndex>
     </changeSet>
+
+    <changeSet id="2" author="veronika-rumiansava">
+        <sql>
+            ALTER TABLE users ADD CONSTRAINT chk_birth_date_not_future CHECK (birth_date &lt;= CURRENT_DATE);
+        </sql>
+
+        <sql>
+            ALTER TABLE users ADD CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+        </sql>
+
+        <sql>
+            ALTER TABLE card_info ADD CONSTRAINT chk_expiration_format CHECK (expiration_date ~ '^(0[1-9]|1[0-2])/\d{2}$');
+        </sql>
+
+        <sql>
+            ALTER TABLE card_info ADD CONSTRAINT chk_card_number_digits CHECK (number ~ '^\d{16}$');
+        </sql>
+    </changeSet>
+
+
 </databaseChangeLog>
