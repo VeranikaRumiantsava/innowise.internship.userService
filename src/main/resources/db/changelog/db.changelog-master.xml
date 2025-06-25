@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.21.xsd">
+
+    <changeSet id="create_tables_users_18-06-2025" author="veronika-rumiantsava">
+        <createTable tableName="users">
+            <column autoIncrement="true" name="id" type="bigint">
+                <constraints nullable="false"
+                             primaryKey="true"
+                />
+            </column>
+            <column name="name" type="varchar(50)">
+                <constraints nullable="false" />
+            </column>
+            <column name="surname" type="varchar(50)">
+            </column>
+            <column name="birth_date" type="date">
+                <constraints nullable="false"
+                />
+            </column>
+            <column name="email" type="varchar(255)">
+                <constraints nullable="false"
+                             unique="true"
+                />
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="users" />
+        </rollback>
+    </changeSet>
+
+    <changeSet id="create_tables_card_info_18-06-2025" author="veronika-rumiantsava">
+        <createTable tableName="card_info">
+            <column autoIncrement="true" name="id" type="bigint">
+                <constraints nullable="false"
+                             primaryKey="true"
+                />
+            </column>
+            <column name="user_id" type="bigint">
+                <constraints nullable="false"
+                             foreignKeyName="fk_cards_users"
+                             referencedTableName="users"
+                             referencedColumnNames="id"
+                />
+            </column>
+            <column name="number" type="char(16)">
+                <constraints nullable="false"
+                             unique="true"
+                />
+            </column>
+            <column name="holder" type="varchar(100)">
+                <constraints nullable="false"
+                />
+            </column>
+            <column name="expiration_date" type="char(5)">
+                <constraints nullable="false"
+                />
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_user_id" tableName="card_info">
+            <column name="user_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="card_info"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="add_constraints_users_18-06-2025" author="veronika-rumiantsava">
+        <sql>
+            ALTER TABLE users ADD CONSTRAINT chk_birth_date_not_future CHECK (birth_date &lt;= CURRENT_DATE);
+        </sql>
+
+        <sql>
+            ALTER TABLE users ADD CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+        </sql>
+
+        <rollback>
+            <sql>
+                ALTER TABLE users DROP CONSTRAINT chk_birth_date_not_future;
+            </sql>
+            <sql>
+                ALTER TABLE users DROP CONSTRAINT chk_email_format;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="add_constraints_card_info_18-06-2025" author="veronika-rumiantsava">
+        <comment>
+            Expiration date's format is MM/YY
+        </comment>
+        <sql>
+            ALTER TABLE card_info ADD CONSTRAINT chk_expiration_format CHECK (expiration_date ~ '^(0[1-9]|1[0-2])/\d{2}$');
+        </sql>
+
+        <sql>
+            ALTER TABLE card_info ADD CONSTRAINT chk_card_number_digits CHECK (number ~ '^\d{16}$');
+        </sql>
+
+        <rollback>
+            <sql>
+                ALTER TABLE card_info DROP CONSTRAINT chk_expiration_format;
+            </sql>
+            <sql>
+                ALTER TABLE card_info DROP CONSTRAINT chk_card_number_digits;
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
