@@ -2,6 +2,8 @@ package org.innowise.internship.userservice.UserService.services;
 
 import java.util.List;
 
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,12 +28,15 @@ public class CardInfoService {
     private final CardInfoRepository cardInfoRepository;
     private final CardInfoMapper cardInfoMapper;
     private final UserRepository userRepository;
+    private final CacheManager cacheManager;
 
     public CardInfoFullDTO createCard(CardInfoCreateDTO cardInfoCreateDTO) {
         validateUserDoesNotHaveCard(cardInfoCreateDTO.getUserId(), cardInfoCreateDTO.getNumber());
 
         User user = userRepository.findById(cardInfoCreateDTO.getUserId())
                 .orElseThrow(() -> new UserNotFoundException(cardInfoCreateDTO.getUserId()));
+
+        cacheManager.getCache("users").evict(user.getId());
 
         CardInfo cardInfo = cardInfoMapper.cardInfoCreateDTOToCardInfo((cardInfoCreateDTO));
         cardInfo.setUser(user);
@@ -59,6 +64,8 @@ public class CardInfoService {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException(id));
 
+        cacheManager.getCache("users").evict(cardInfo.getUser().getId());
+
         validateUserDoesNotHaveCard(cardInfo.getUser().getId(), cardInfoUpdateDTO.getNumber());
 
         cardInfoMapper.updateCardInfoFromCardInfoUpdateDTO(cardInfoUpdateDTO, cardInfo);
@@ -68,9 +75,11 @@ public class CardInfoService {
 
     @Transactional
     public void deleteCardById(Long id) {
-        if (!cardInfoRepository.existsById(id)) {
-            throw new CardNotFoundException(id);
-        }
+        CardInfo cardInfo = cardInfoRepository.findById(id)
+                .orElseThrow(() -> new CardNotFoundException(id));
+
+        cacheManager.getCache("users").evict(cardInfo.getUser().getId());
+
         cardInfoRepository.deleteById(id);
     }
 
