@@ -28,7 +28,6 @@ public class CardInfoService {
     private final CardInfoRepository cardInfoRepository;
     private final CardInfoMapper cardInfoMapper;
     private final UserRepository userRepository;
-    private final CacheManager cacheManager;
 
     public CardInfoFullDTO createCard(CardInfoCreateDTO cardInfoCreateDTO) {
         validateUserDoesNotHaveCard(cardInfoCreateDTO.getUserId(), cardInfoCreateDTO.getNumber());
