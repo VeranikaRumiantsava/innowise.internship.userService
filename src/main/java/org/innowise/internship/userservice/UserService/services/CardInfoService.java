@@ -36,7 +36,7 @@ public class CardInfoService {
         User user = userRepository.findById(cardInfoCreateDTO.getUserId())
                 .orElseThrow(() -> new UserNotFoundException(cardInfoCreateDTO.getUserId()));
 
-        cacheManager.getCache("users").evict(user.getId());
+        cacheUserEvict(user.getId());
 
         CardInfo cardInfo = cardInfoMapper.cardInfoCreateDTOToCardInfo((cardInfoCreateDTO));
         cardInfo.setUser(user);
@@ -64,7 +64,7 @@ public class CardInfoService {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException(id));
 
-        cacheManager.getCache("users").evict(cardInfo.getUser().getId());
+        cacheUserEvict(cardInfo.getUser().getId());
 
         validateUserDoesNotHaveCard(cardInfo.getUser().getId(), cardInfoUpdateDTO.getNumber());
 
@@ -78,7 +78,7 @@ public class CardInfoService {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException(id));
 
-        cacheManager.getCache("users").evict(cardInfo.getUser().getId());
+        cacheUserEvict(cardInfo.getUser().getId());
 
         cardInfoRepository.deleteById(id);
     }
@@ -87,5 +87,9 @@ public class CardInfoService {
         if (cardInfoRepository.existsByUserIdAndNumber(id, number)) {
             throw new UserAlreadyHasTheCardWithTheSameNumberException(number);
         }
+    }
+
+    @CacheEvict(value = "users", key = "#id")
+    public void cacheUserEvict(Long id){
     }
 }
