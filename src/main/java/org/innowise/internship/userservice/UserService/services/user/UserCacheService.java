@@ -56,4 +56,9 @@ public class UserCacheService {
         }
         userRepository.deleteById(id);
     }
+
+    @CacheEvict(value = "users", key="#id")
+    public void cacheEvictUserById(Long id) {
+    }
+
 }

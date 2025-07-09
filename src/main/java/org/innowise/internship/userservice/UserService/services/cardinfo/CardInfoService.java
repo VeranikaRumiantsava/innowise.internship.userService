@@ -1,9 +1,8 @@
 package org.innowise.internship.userservice.UserService.services.cardinfo;
 
 import java.util.List;
-import java.util.Objects;
 
-import org.springframework.cache.CacheManager;
+import org.innowise.internship.userservice.UserService.services.user.UserCacheService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +27,7 @@ public class CardInfoService {
     private final CardInfoRepository cardInfoRepository;
     private final CardInfoMapper cardInfoMapper;
     private final UserRepository userRepository;
-    private final CacheManager cacheManager;
+    private final UserCacheService userCacheService;
 
     public CardInfoResponseDTO createCard(CardInfoCreateDTO cardInfoCreateDTO) {
         validateUserDoesNotHaveCard(cardInfoCreateDTO.getUserId(), cardInfoCreateDTO.getNumber());
@@ -36,7 +35,8 @@ public class CardInfoService {
         User user = userRepository.findById(cardInfoCreateDTO.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User with ID " + cardInfoCreateDTO.getUserId() + " not found"));
 
-        Objects.requireNonNull(cacheManager.getCache("users")).evict(user.getId());
+
+        userCacheService.cacheEvictUserById(user.getId());
 
         CardInfo cardInfo = cardInfoMapper.cardInfoCreateDTOToCardInfo((cardInfoCreateDTO));
         cardInfo.setUser(user);
@@ -64,7 +64,7 @@ public class CardInfoService {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card with ID " + id + " not found"));
 
-        Objects.requireNonNull(cacheManager.getCache("users")).evict(cardInfo.getUser().getId());
+        userCacheService.cacheEvictUserById(cardInfo.getUser().getId());
 
         validateUserDoesNotHaveCard(cardInfo.getUser().getId(), cardInfoUpdateDTO.getNumber());
 
@@ -78,8 +78,7 @@ public class CardInfoService {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card with ID " + id + " not found"));
 
-        Objects.requireNonNull(cacheManager.getCache("users")).evict(cardInfo.getUser().getId());
-
+        userCacheService.cacheEvictUserById(cardInfo.getUser().getId());
         cardInfoRepository.deleteById(id);
     }
 
