@@ -1,5 +1,6 @@
 package org.innowise.internship.userservice.UserService.mappers;
 
+import org.innowise.internship.userservice.UserService.dto.user.UserCacheDTO;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -7,7 +8,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import org.innowise.internship.userservice.UserService.dto.user.UserCreateDTO;
-import org.innowise.internship.userservice.UserService.dto.user.UserFullDTO;
+import org.innowise.internship.userservice.UserService.dto.user.UserResponseDTO;
 import org.innowise.internship.userservice.UserService.dto.user.UserShortDTO;
 import org.innowise.internship.userservice.UserService.dto.user.UserUpdateDTO;
 import org.innowise.internship.userservice.UserService.entities.User;
@@ -27,5 +28,11 @@ public interface UserMapper {
     @Mapping(target = "fullName", expression = "java(user.getName() + \" \" + user.getSurname())")
     UserShortDTO userToUserShortDTO(User user);
 
-    UserFullDTO userToUserFullDTO(User user);
+    UserResponseDTO userToUserResponseDTO(User user);
+
+    UserResponseDTO userCacheDTOToUserResponseDTO(UserCacheDTO userCacheDTO);
+
+    UserCacheDTO userResponseDTOToUserCacheDTO(UserResponseDTO userResponseDTO);
+
+    UserCacheDTO userToUserCacheDTO(User user);
 }
