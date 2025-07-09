@@ -7,7 +7,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Setter
 @Getter
-public class CardInfoFullDTO {
+public class CardInfoResponseDTO {
     private Long id;
     private Long userId;
     private String number;
