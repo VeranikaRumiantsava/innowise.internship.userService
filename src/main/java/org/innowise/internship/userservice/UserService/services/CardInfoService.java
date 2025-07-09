@@ -1,9 +1,9 @@
 package org.innowise.internship.userservice.UserService.services;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +28,7 @@ public class CardInfoService {
     private final CardInfoRepository cardInfoRepository;
     private final CardInfoMapper cardInfoMapper;
     private final UserRepository userRepository;
+    private final CacheManager cacheManager;
 
     public CardInfoFullDTO createCard(CardInfoCreateDTO cardInfoCreateDTO) {
         validateUserDoesNotHaveCard(cardInfoCreateDTO.getUserId(), cardInfoCreateDTO.getNumber());
@@ -35,7 +36,7 @@ public class CardInfoService {
         User user = userRepository.findById(cardInfoCreateDTO.getUserId())
                 .orElseThrow(() -> new UserNotFoundException(cardInfoCreateDTO.getUserId()));
 
-        cacheUserEvict(user.getId());
+        Objects.requireNonNull(cacheManager.getCache("users")).evict(user.getId());
 
         CardInfo cardInfo = cardInfoMapper.cardInfoCreateDTOToCardInfo((cardInfoCreateDTO));
         cardInfo.setUser(user);
@@ -63,7 +64,7 @@ public class CardInfoService {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException(id));
 
-        cacheUserEvict(cardInfo.getUser().getId());
+        Objects.requireNonNull(cacheManager.getCache("users")).evict(cardInfo.getUser().getId());
 
         validateUserDoesNotHaveCard(cardInfo.getUser().getId(), cardInfoUpdateDTO.getNumber());
 
@@ -77,7 +78,7 @@ public class CardInfoService {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException(id));
 
-        cacheUserEvict(cardInfo.getUser().getId());
+        Objects.requireNonNull(cacheManager.getCache("users")).evict(cardInfo.getUser().getId());
 
         cardInfoRepository.deleteById(id);
     }
@@ -86,9 +87,5 @@ public class CardInfoService {
         if (cardInfoRepository.existsByUserIdAndNumber(id, number)) {
             throw new UserAlreadyHasTheCardWithTheSameNumberException(number);
         }
-    }
-
-    @CacheEvict(value = "users", key = "#id")
-    public void cacheUserEvict(Long id){
     }
 }

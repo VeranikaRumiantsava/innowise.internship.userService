@@ -70,6 +70,7 @@ public class UserService {
 
         userMapper.updateUserFromUserUpdateDTO(userUpdateDTO, user);
 
+
         userRepository.save(user);
         try {
             userRepository.flush();
