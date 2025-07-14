@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.innowise.internship.userservice.UserService.dto.user.UserResponseDTO;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,15 +26,13 @@ public class UserService {
     private final UserCacheService userCacheService;
 
     public UserResponseDTO createUser(UserCreateDTO userCreateDTO) {
-        User user;
-        try {
-            user = userRepository.save(userMapper.userCreateDTOToUser(userCreateDTO));
-        } catch (DataIntegrityViolationException ex) {
-            if (ex.getMessage().contains("email")) {
-                throw new EmailAlreadyExistsException("User with email " + userCreateDTO.getEmail() + " already exists");
-            }
-            throw ex;
+
+        if (userRepository.findByEmail(userCreateDTO.getEmail()).isPresent()) {
+            throw new EmailAlreadyExistsException("User with email " + userCreateDTO.getEmail() + " already exists");
         }
+
+        User user = userRepository.save(userMapper.userCreateDTOToUser(userCreateDTO));
+
         return userMapper.userToUserResponseDTO(user);
     }
 

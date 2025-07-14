@@ -30,11 +30,10 @@ public class CardInfoService {
     private final UserCacheService userCacheService;
 
     public CardInfoResponseDTO createCard(CardInfoCreateDTO cardInfoCreateDTO) {
-        validateUserDoesNotHaveCard(cardInfoCreateDTO.getUserId(), cardInfoCreateDTO.getNumber());
-
         User user = userRepository.findById(cardInfoCreateDTO.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User with ID " + cardInfoCreateDTO.getUserId() + " not found"));
 
+        validateUserDoesNotHaveCard(cardInfoCreateDTO.getUserId(), cardInfoCreateDTO.getNumber());
 
         userCacheService.cacheEvictUserById(user.getId());
 
@@ -64,9 +63,9 @@ public class CardInfoService {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card with ID " + id + " not found"));
 
-        userCacheService.cacheEvictUserById(cardInfo.getUser().getId());
-
         validateUserDoesNotHaveCard(cardInfo.getUser().getId(), cardInfoUpdateDTO.getNumber());
+
+        userCacheService.cacheEvictUserById(cardInfo.getUser().getId());
 
         cardInfoMapper.updateCardInfoFromCardInfoUpdateDTO(cardInfoUpdateDTO, cardInfo);
 
