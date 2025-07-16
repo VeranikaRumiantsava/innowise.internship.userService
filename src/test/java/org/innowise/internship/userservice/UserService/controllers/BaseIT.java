@@ -3,11 +3,14 @@ package org.innowise.internship.userservice.UserService.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.innowise.internship.userservice.UserService.mappers.UserMapper;
 import org.innowise.internship.userservice.UserService.repositories.UserRepository;
+import org.innowise.internship.userservice.UserService.services.user.UserCacheService;
+import org.innowise.internship.userservice.UserService.services.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -31,6 +34,10 @@ public abstract class BaseIT {
 
     @Autowired
     protected UserMapper userMapper;
+
+    @Autowired
+    @MockitoSpyBean
+    protected UserCacheService userCacheService;
 
     @Container
     public static final PostgreSQLContainer<?> POSTGRESQL = new PostgreSQLContainer<>("postgres:15-alpine")

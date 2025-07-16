@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -16,6 +17,7 @@ import org.springframework.http.MediaType;
 
 import java.time.LocalDate;
 
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -278,7 +280,7 @@ public class UserControllerIT extends BaseIT {
         private User savedUser = new User();
 
         @BeforeEach
-        void setupBeforeUpdateTests() {
+        void setupBeforeCacheTests() {
             UserCreateDTO createDTO = createUserCreateDTO("Veronica", "Rum", "test@example.com", LocalDate.of(1995, 12, 6));
 
             User user = userMapper.userCreateDTOToUser(createDTO);
@@ -292,7 +294,14 @@ public class UserControllerIT extends BaseIT {
             mockMvc.perform(get("/user/{id}", savedUser.getId()))
                     .andExpect(status().isOk());
 
+            Mockito.verify(userCacheService, Mockito.times(1)).getUserById(savedUser.getId());
+
             Assertions.assertTrue(stringRedisTemplate.hasKey("users::" + savedUser.getId()));
+
+            mockMvc.perform(get("/user/{id}", savedUser.getId()))
+                    .andExpect(status().isOk());
+
+            Mockito.verify(userCacheService, Mockito.times(1)).getUserById(savedUser.getId());
         }
 
         @Test
