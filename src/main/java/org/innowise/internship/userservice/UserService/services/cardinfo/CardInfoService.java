@@ -63,7 +63,9 @@ public class CardInfoService {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card with ID " + id + " not found"));
 
-        validateUserDoesNotHaveCard(cardInfo.getUser().getId(), cardInfoUpdateDTO.getNumber());
+        if (!cardInfo.getNumber().equals(cardInfoUpdateDTO.getNumber())) {
+            validateUserDoesNotHaveCard(cardInfo.getUser().getId(), cardInfoUpdateDTO.getNumber());
+        }
 
         userCacheService.cacheEvictUserById(cardInfo.getUser().getId());
 
