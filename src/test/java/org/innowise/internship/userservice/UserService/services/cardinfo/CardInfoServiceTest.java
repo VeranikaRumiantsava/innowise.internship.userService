@@ -160,6 +160,7 @@ class CardInfoServiceTest {
         existingCard.setUser(user);
 
         CardInfo updatedCard = new CardInfo();
+        updatedCard.setNumber("1122334455667788");
         CardInfoResponseDTO responseDTO = new CardInfoResponseDTO();
 
         Mockito.when(cardInfoRepository.findById(id)).thenReturn(Optional.of(existingCard));

@@ -1,6 +1,7 @@
 package org.innowise.internship.userservice.UserService.services.cardinfo;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.innowise.internship.userservice.UserService.services.user.UserCacheService;
 import org.springframework.stereotype.Service;
@@ -63,7 +64,7 @@ public class CardInfoService {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card with ID " + id + " not found"));
 
-        if (!cardInfo.getNumber().equals(cardInfoUpdateDTO.getNumber())) {
+        if (!Objects.equals(cardInfo.getNumber(), cardInfoUpdateDTO.getNumber())) {
             validateUserDoesNotHaveCard(cardInfo.getUser().getId(), cardInfoUpdateDTO.getNumber());
         }
 
