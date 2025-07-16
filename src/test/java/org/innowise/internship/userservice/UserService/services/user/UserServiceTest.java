@@ -23,16 +23,16 @@ import java.util.Optional;
 class UserServiceTest {
 
     @Mock
-    private UserRepository userRepository;
+    protected UserRepository userRepository;
 
     @Mock
-    private UserMapper userMapper;
+    protected UserMapper userMapper;
 
     @Mock
-    private UserCacheService userCacheService;
+    protected UserCacheService userCacheService;
 
     @InjectMocks
-    private UserService userService;
+    protected UserService userService;
 
     @Test
     void createUserShouldReturnUserResponseDTO() {
