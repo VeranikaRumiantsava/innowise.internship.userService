@@ -48,6 +48,21 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: user
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U user"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -67,10 +82,10 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Run unit tests
-        run: mvn test  -Dspring.profiles.active=test 
+        run: mvn test  -Dspring.profiles.active=test
 
       - name: Run integration tests
-        run: mvn verify  -Dspring.profiles.active=test 
+        run: mvn verify  -Dspring.profiles.active=test
 
   sonar-analysis:
     runs-on: ubuntu-latest
