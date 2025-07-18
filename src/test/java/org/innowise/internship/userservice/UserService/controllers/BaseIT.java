@@ -57,9 +57,4 @@ public abstract class BaseIT {
         registry.add("spring.data.redis.host", REDIS::getHost);
         registry.add("spring.data.redis.port", REDIS::getFirstMappedPort);
     }
-
-    static {
-        POSTGRESQL.start();
-        REDIS.start();
-    }
 }
