@@ -112,8 +112,12 @@ jobs:
       - name: Run SonarCloud scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn sonar:sonar -Dsonar.projectKey=VeranikaRumiantsava_innowise.internship.userService -Dsonar.organization=veranikarumiantsava -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-
+          run: |
+            mvn sonar:sonar \
+              -Dsonar.projectKey=VeranikaRumiantsava_innowise.internship.userService \
+              -Dsonar.organization=veranikarumiantsava \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.login=${{ secrets.SONAR_TOKEN }}
 
   docker-build:
     runs-on: ubuntu-latest
