@@ -113,6 +113,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
+          echo "Sonar token is: $SONAR_TOKEN"
           mvn sonar:sonar \
           -Dsonar.projectKey=VeranikaRumiantsava_innowise.internship.userService \
           -Dsonar.organization=veranikarumiantsava \
