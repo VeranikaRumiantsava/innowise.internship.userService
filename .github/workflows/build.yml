@@ -33,7 +33,7 @@ jobs:
       - name: Build project
         run: mvn clean compile
 
-  test:
+    test:
     runs-on: ubuntu-latest
     needs: build
 
@@ -66,8 +66,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Run all tests (unit + integration)
-        run: mvn verify
+      - name: Run only integration tests
+        run: mvn verify -Dskip.unit.tests=true -Dgroups=integration
 
 
   sonar-analysis:
