@@ -109,6 +109,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
+      - name: Build project
+        run: mvn clean compile
+
       - name: Run SonarCloud scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
