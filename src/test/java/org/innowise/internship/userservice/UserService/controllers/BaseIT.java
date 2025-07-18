@@ -41,9 +41,9 @@ public abstract class BaseIT {
 
     @Container
     public static final PostgreSQLContainer<?> POSTGRESQL = new PostgreSQLContainer<>("postgres:15-alpine")
-            .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test");
+            .withDatabaseName("user")
+            .withUsername("user")
+            .withPassword("password");
 
     @Container
     public static final GenericContainer<?> REDIS = new GenericContainer<>(DockerImageName.parse("redis:7.2.4"))
