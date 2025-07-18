@@ -82,10 +82,10 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Run unit tests
-        run: mvn test  -Dspring.profiles.active=test
+        run: mvn test -Dspring.profiles.active=test -X
 
       - name: Run integration tests
-        run: mvn verify  -Dspring.profiles.active=test
+        run: mvn verify -Dspring.profiles.active=test -X
 
   sonar-analysis:
     runs-on: ubuntu-latest
