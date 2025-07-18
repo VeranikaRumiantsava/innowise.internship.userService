@@ -66,11 +66,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Run unit tests
-        run: mvn test
-
-      - name: Run integration tests
+      - name: Run all tests (unit + integration)
         run: mvn verify
+
 
   sonar-analysis:
     runs-on: ubuntu-latest
