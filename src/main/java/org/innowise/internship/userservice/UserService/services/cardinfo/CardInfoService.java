@@ -1,14 +1,14 @@
-package org.innowise.internship.userservice.UserService.services;
+package org.innowise.internship.userservice.UserService.services.cardinfo;
 
 import java.util.List;
+import java.util.Objects;
 
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
+import org.innowise.internship.userservice.UserService.services.user.UserCacheService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.innowise.internship.userservice.UserService.dto.cardInfo.CardInfoCreateDTO;
-import org.innowise.internship.userservice.UserService.dto.cardInfo.CardInfoFullDTO;
+import org.innowise.internship.userservice.UserService.dto.cardInfo.CardInfoResponseDTO;
 import org.innowise.internship.userservice.UserService.dto.cardInfo.CardInfoUpdateDTO;
 import org.innowise.internship.userservice.UserService.entities.CardInfo;
 import org.innowise.internship.userservice.UserService.entities.User;
@@ -28,67 +28,65 @@ public class CardInfoService {
     private final CardInfoRepository cardInfoRepository;
     private final CardInfoMapper cardInfoMapper;
     private final UserRepository userRepository;
+    private final UserCacheService userCacheService;
 
-    public CardInfoFullDTO createCard(CardInfoCreateDTO cardInfoCreateDTO) {
+    public CardInfoResponseDTO createCard(CardInfoCreateDTO cardInfoCreateDTO) {
+        User user = userRepository.findById(cardInfoCreateDTO.getUserId())
+                .orElseThrow(() -> new UserNotFoundException("User with ID " + cardInfoCreateDTO.getUserId() + " not found"));
+
         validateUserDoesNotHaveCard(cardInfoCreateDTO.getUserId(), cardInfoCreateDTO.getNumber());
 
-        User user = userRepository.findById(cardInfoCreateDTO.getUserId())
-                .orElseThrow(() -> new UserNotFoundException(cardInfoCreateDTO.getUserId()));
-
-        cacheUserEvict(user.getId());
+        userCacheService.cacheEvictUserById(user.getId());
 
         CardInfo cardInfo = cardInfoMapper.cardInfoCreateDTOToCardInfo((cardInfoCreateDTO));
         cardInfo.setUser(user);
 
         cardInfo = cardInfoRepository.save(cardInfo);
 
-        return cardInfoMapper.cardInfoToCardInfoFullDTO(cardInfo);
+        return cardInfoMapper.cardInfoToCardInfoResponseDTO(cardInfo);
     }
 
-    public CardInfoFullDTO getCardById(Long id) {
+    public CardInfoResponseDTO getCardById(Long id) {
         CardInfo cardInfo = cardInfoRepository.findById(id)
-                .orElseThrow(() -> new CardNotFoundException(id));
+                .orElseThrow(() -> new CardNotFoundException("Card with ID " + id + " not found"));
 
-        return cardInfoMapper.cardInfoToCardInfoFullDTO(cardInfo);
+        return cardInfoMapper.cardInfoToCardInfoResponseDTO(cardInfo);
     }
 
-    public List<CardInfoFullDTO> getCardsByIds(List<Long> ids) {
+    public List<CardInfoResponseDTO> getCardsByIds(List<Long> ids) {
         return cardInfoRepository.findAllByIdIn(ids).stream()
-                .map(cardInfoMapper::cardInfoToCardInfoFullDTO)
+                .map(cardInfoMapper::cardInfoToCardInfoResponseDTO)
                 .toList();
     }
 
     @Transactional
-    public CardInfoFullDTO updateCard(Long id, CardInfoUpdateDTO cardInfoUpdateDTO) {
+    public CardInfoResponseDTO updateCard(Long id, CardInfoUpdateDTO cardInfoUpdateDTO) {
         CardInfo cardInfo = cardInfoRepository.findById(id)
-                .orElseThrow(() -> new CardNotFoundException(id));
+                .orElseThrow(() -> new CardNotFoundException("Card with ID " + id + " not found"));
 
-        cacheUserEvict(cardInfo.getUser().getId());
+        if (!Objects.equals(cardInfo.getNumber(), cardInfoUpdateDTO.getNumber())) {
+            validateUserDoesNotHaveCard(cardInfo.getUser().getId(), cardInfoUpdateDTO.getNumber());
+        }
 
-        validateUserDoesNotHaveCard(cardInfo.getUser().getId(), cardInfoUpdateDTO.getNumber());
+        userCacheService.cacheEvictUserById(cardInfo.getUser().getId());
 
         cardInfoMapper.updateCardInfoFromCardInfoUpdateDTO(cardInfoUpdateDTO, cardInfo);
 
-        return cardInfoMapper.cardInfoToCardInfoFullDTO(cardInfoRepository.save(cardInfo));
+        return cardInfoMapper.cardInfoToCardInfoResponseDTO(cardInfoRepository.save(cardInfo));
     }
 
     @Transactional
     public void deleteCardById(Long id) {
         CardInfo cardInfo = cardInfoRepository.findById(id)
-                .orElseThrow(() -> new CardNotFoundException(id));
+                .orElseThrow(() -> new CardNotFoundException("Card with ID " + id + " not found"));
 
-        cacheUserEvict(cardInfo.getUser().getId());
-
+        userCacheService.cacheEvictUserById(cardInfo.getUser().getId());
         cardInfoRepository.deleteById(id);
     }
 
     private void validateUserDoesNotHaveCard(Long id, String number) {
         if (cardInfoRepository.existsByUserIdAndNumber(id, number)) {
-            throw new UserAlreadyHasTheCardWithTheSameNumberException(number);
+            throw new UserAlreadyHasTheCardWithTheSameNumberException("This user already has card with number " + number);
         }
-    }
-
-    @CacheEvict(value = "users", key = "#id")
-    public void cacheUserEvict(Long id){
     }
 }
