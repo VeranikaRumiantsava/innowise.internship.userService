@@ -110,7 +110,7 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Build project
-        run: mvn verify
+        run: mvn verify -Dspring.profiles.active=test -X
 
       - name: List compiled classes for debug
         run: ls -la target/classes
