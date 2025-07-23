@@ -43,7 +43,7 @@ public abstract class BaseIT {
 
     @Container
     public static final PostgreSQLContainer<?> POSTGRESQL = new PostgreSQLContainer<>("postgres:15-alpine")
-            .withDatabaseName("user")
+            .withDatabaseName("test_user")
             .withUsername("user")
             .withPassword("password");
 
