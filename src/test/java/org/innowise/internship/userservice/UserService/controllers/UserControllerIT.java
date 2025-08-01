@@ -29,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @Testcontainers
-@ActiveProfiles("test")
 public class UserControllerIT extends BaseIT {
 
     private UserCreateDTO createUserCreateDTO(String name, String surname, String email, LocalDate birthdate) {
