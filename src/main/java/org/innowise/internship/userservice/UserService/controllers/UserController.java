@@ -35,17 +35,6 @@ public class UserController {
 
     private final UserService userService;
 
-    private Long getIdFromAuthentication()
-    {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Long id = null;
-        if (authentication != null && authentication.getPrincipal() instanceof UserDetails userDetails) {
-            String userId = userDetails.getUsername(); // ты кладёшь userId как username
-            id = Long.parseLong(userId);
-        }
-        return id;
-    }
-
     @PostMapping
     public ResponseEntity<UserResponseDTO> createUser(@RequestBody @Valid UserCreateDTO userCreateDTO) {
         UserResponseDTO userResponseDTO = userService.createUser(userCreateDTO);

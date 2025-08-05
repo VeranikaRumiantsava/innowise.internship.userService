@@ -41,7 +41,7 @@ public class CardInfoController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long id = null;
         if (authentication != null && authentication.getPrincipal() instanceof UserDetails userDetails) {
-            String userId = userDetails.getUsername(); // ты кладёшь userId как username
+            String userId = userDetails.getUsername();
             id = Long.parseLong(userId);
         }
         return id;
