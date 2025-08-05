@@ -7,6 +7,9 @@ import jakarta.validation.Valid;
 import org.innowise.internship.userservice.UserService.dto.user.UserResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -31,6 +34,17 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
     private final UserService userService;
+
+    private Long getIdFromAuthentication()
+    {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long id = null;
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails userDetails) {
+            String userId = userDetails.getUsername(); // ты кладёшь userId как username
+            id = Long.parseLong(userId);
+        }
+        return id;
+    }
 
     @PostMapping
     public ResponseEntity<UserResponseDTO> createUser(@RequestBody @Valid UserCreateDTO userCreateDTO) {

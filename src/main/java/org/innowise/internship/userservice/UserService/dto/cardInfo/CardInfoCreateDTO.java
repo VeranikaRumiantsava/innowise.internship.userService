@@ -16,8 +16,8 @@ import lombok.Setter;
 @Getter
 public class CardInfoCreateDTO {
 
-    @NotNull(message = "User ID must not be null")
-    private Long userId;
+//    @NotNull(message = "User ID must not be null")
+//    private Long userId;
 
     @NotNull(message = "Number card must not be null")
     @Pattern(regexp = "^\\d{16}$", message = "Card number must be exactly 16 digits")

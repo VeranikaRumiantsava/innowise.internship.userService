@@ -7,6 +7,9 @@ import jakarta.validation.Valid;
 import org.innowise.internship.userservice.UserService.dto.cardInfo.CardInfoResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -33,15 +36,29 @@ public class CardInfoController {
 
     private final CardInfoService cardInfoService;
 
+    private Long getIdFromAuthentication()
+    {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long id = null;
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails userDetails) {
+            String userId = userDetails.getUsername(); // ты кладёшь userId как username
+            id = Long.parseLong(userId);
+        }
+        return id;
+    }
+
     @PostMapping
     public ResponseEntity<CardInfoResponseDTO> createCardInfo(@RequestBody @Valid CardInfoCreateDTO cardInfoCreateDTO) {
-        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.createCard(cardInfoCreateDTO);
+
+        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.createCard(cardInfoCreateDTO, getIdFromAuthentication());
         return ResponseEntity.status(HttpStatus.CREATED).body(cardInfoResponseDTO);
     }
 
+
+    //???
     @GetMapping("/{id}")
     public ResponseEntity<CardInfoResponseDTO> getCardInfoById(@PathVariable Long id) {
-        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.getCardById(id);
+        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.getCardById(id, getIdFromAuthentication());
         return ResponseEntity.ok(cardInfoResponseDTO);
     }
 
@@ -53,13 +70,13 @@ public class CardInfoController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<CardInfoResponseDTO> updateCardInfoById(@PathVariable Long id, @RequestBody @Valid CardInfoUpdateDTO cardInfoUpdateDTO) {
-        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.updateCard(id, cardInfoUpdateDTO);
+        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.updateCard(id, cardInfoUpdateDTO, getIdFromAuthentication());
         return ResponseEntity.ok(cardInfoResponseDTO);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCardInfoById(@PathVariable Long id) {
-        cardInfoService.deleteCardById(id);
+        cardInfoService.deleteCardById(id, getIdFromAuthentication());
         return ResponseEntity.noContent().build();
     }
 }

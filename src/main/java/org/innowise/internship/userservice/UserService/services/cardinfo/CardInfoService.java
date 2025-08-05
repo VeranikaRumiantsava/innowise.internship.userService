@@ -1,5 +1,6 @@
 package org.innowise.internship.userservice.UserService.services.cardinfo;
 
+import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,11 +31,11 @@ public class CardInfoService {
     private final UserRepository userRepository;
     private final UserCacheService userCacheService;
 
-    public CardInfoResponseDTO createCard(CardInfoCreateDTO cardInfoCreateDTO) {
-        User user = userRepository.findById(cardInfoCreateDTO.getUserId())
-                .orElseThrow(() -> new UserNotFoundException("User with ID " + cardInfoCreateDTO.getUserId() + " not found"));
+    public CardInfoResponseDTO createCard(CardInfoCreateDTO cardInfoCreateDTO, Long idUser) {
+        User user = userRepository.findById(idUser)
+                .orElseThrow(() -> new UserNotFoundException("User with ID " + idUser + " not found"));
 
-        validateUserDoesNotHaveCard(cardInfoCreateDTO.getUserId(), cardInfoCreateDTO.getNumber());
+        validateUserDoesNotHaveCard(idUser, cardInfoCreateDTO.getNumber());
 
         userCacheService.cacheEvictUserById(user.getId());
 
@@ -46,9 +47,13 @@ public class CardInfoService {
         return cardInfoMapper.cardInfoToCardInfoResponseDTO(cardInfo);
     }
 
-    public CardInfoResponseDTO getCardById(Long id) {
+    public CardInfoResponseDTO getCardById(Long id, Long userId) {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card with ID " + id + " not found"));
+
+        if(!Objects.equals(cardInfo.getUser().getId(), userId)) {
+            throw new AccessDeniedException("It's not your card. Get away!");
+        }
 
         return cardInfoMapper.cardInfoToCardInfoResponseDTO(cardInfo);
     }
@@ -60,9 +65,13 @@ public class CardInfoService {
     }
 
     @Transactional
-    public CardInfoResponseDTO updateCard(Long id, CardInfoUpdateDTO cardInfoUpdateDTO) {
+    public CardInfoResponseDTO updateCard(Long id, CardInfoUpdateDTO cardInfoUpdateDTO, Long userId) {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card with ID " + id + " not found"));
+
+        if(!Objects.equals(cardInfo.getUser().getId(), userId)) {
+            throw new AccessDeniedException("It's not your card. Get away!");
+        }
 
         if (!Objects.equals(cardInfo.getNumber(), cardInfoUpdateDTO.getNumber())) {
             validateUserDoesNotHaveCard(cardInfo.getUser().getId(), cardInfoUpdateDTO.getNumber());
@@ -76,9 +85,13 @@ public class CardInfoService {
     }
 
     @Transactional
-    public void deleteCardById(Long id) {
+    public void deleteCardById(Long id, Long userId) {
         CardInfo cardInfo = cardInfoRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card with ID " + id + " not found"));
+
+        if(!Objects.equals(cardInfo.getUser().getId(), userId)) {
+            throw new AccessDeniedException("It's not your card. Get away!");
+        }
 
         userCacheService.cacheEvictUserById(cardInfo.getUser().getId());
         cardInfoRepository.deleteById(id);
