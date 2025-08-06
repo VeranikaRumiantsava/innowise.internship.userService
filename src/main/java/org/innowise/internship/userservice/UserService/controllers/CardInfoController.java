@@ -53,8 +53,6 @@ public class CardInfoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(cardInfoResponseDTO);
     }
 
-
-    //???
     @GetMapping("/{id}")
     public ResponseEntity<CardInfoResponseDTO> getCardInfoById(@PathVariable Long id) {
         CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.getCardById(id, getIdFromAuthentication());
