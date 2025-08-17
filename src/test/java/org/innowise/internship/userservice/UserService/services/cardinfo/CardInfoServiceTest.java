@@ -44,77 +44,91 @@ class CardInfoServiceTest {
     @Test
     void createCardShouldCreateCardWhenUserExistsAndNoDuplicateNumber() {
         CardInfoCreateDTO createDTO = new CardInfoCreateDTO();
-        createDTO.setUserId(1L);
         createDTO.setNumber("1234123412341234");
 
+        Long userId = 1L;
+
         User user = new User();
-        user.setId(1L);
+        user.setId(userId);
 
         CardInfo cardInfo = new CardInfo();
         CardInfo savedCard = new CardInfo();
         CardInfoResponseDTO responseDTO = new CardInfoResponseDTO();
 
-        Mockito.when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        Mockito.when(cardInfoRepository.existsByUserIdAndNumber(1L, "1234123412341234")).thenReturn(false);
+        Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        Mockito.when(cardInfoRepository.existsByUserIdAndNumber(userId, "1234123412341234")).thenReturn(false);
         Mockito.when(cardInfoMapper.cardInfoCreateDTOToCardInfo(createDTO)).thenReturn(cardInfo);
         Mockito.when(cardInfoRepository.save(cardInfo)).thenReturn(savedCard);
         Mockito.when(cardInfoMapper.cardInfoToCardInfoResponseDTO(savedCard)).thenReturn(responseDTO);
 
-        CardInfoResponseDTO result = cardInfoService.createCard(createDTO);
+        CardInfoResponseDTO result = cardInfoService.createCard(createDTO, userId);
 
         Assertions.assertEquals(responseDTO, result);
-        Mockito.verify(userCacheService).cacheEvictUserById(1L);
+        Mockito.verify(userCacheService).cacheEvictUserById(userId);
     }
 
     @Test
     void createCardShouldThrowWhenUserNotFound() {
+        Long userId = 1L;
         CardInfoCreateDTO createDTO = new CardInfoCreateDTO();
-        createDTO.setUserId(1L);
+        createDTO.setNumber("1234567890123456");
 
-        Mockito.when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        Mockito.when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         Assertions.assertThrows(UserNotFoundException.class,
-                () -> cardInfoService.createCard(createDTO));
+                () -> cardInfoService.createCard(createDTO, userId));
 
         Mockito.verifyNoInteractions(userCacheService);
     }
 
     @Test
     void createCardShouldThrowWhenUserHasDuplicateCard() {
+        Long userId = 1L;
+
         CardInfoCreateDTO createDTO = new CardInfoCreateDTO();
-        createDTO.setUserId(1L);
-        createDTO.setNumber("1234123412341234");
+        createDTO.setNumber("1234567890123456");
 
         User user = new User();
-        user.setId(1L);
+        user.setId(userId);
 
-        Mockito.when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        Mockito.when(cardInfoRepository.existsByUserIdAndNumber(1L, "1234123412341234")).thenReturn(true);
+        Mockito.when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        Mockito.when(cardInfoRepository.existsByUserIdAndNumber(userId, "1234567890123456")).thenReturn(true);
 
         Assertions.assertThrows(UserAlreadyHasTheCardWithTheSameNumberException.class,
-                () -> cardInfoService.createCard(createDTO));
+                () -> cardInfoService.createCard(createDTO, userId));
 
         Mockito.verifyNoInteractions(userCacheService);
     }
 
     @Test
     void getCardByIdShouldReturnCard() {
+        Long userId = 1L;
+        Long cardId = 10L;
+
         CardInfo card = new CardInfo();
+        User user = new User();
+        user.setId(userId);
+        card.setUser(user);
+
         CardInfoResponseDTO responseDTO = new CardInfoResponseDTO();
 
-        Mockito.when(cardInfoRepository.findById(1L)).thenReturn(Optional.of(card));
+        Mockito.when(cardInfoRepository.findById(cardId)).thenReturn(Optional.of(card));
         Mockito.when(cardInfoMapper.cardInfoToCardInfoResponseDTO(card)).thenReturn(responseDTO);
 
-        Assertions.assertEquals(responseDTO, cardInfoService.getCardById(1L));
+        CardInfoResponseDTO result = cardInfoService.getCardById(cardId, userId);
+
+        Assertions.assertEquals(responseDTO, result);
     }
 
     @Test
     void getCardByIdShouldThrowWhenNotFound() {
+        Long cardId = 1L;
+        Long userId = 100L;
 
-        Mockito.when(cardInfoRepository.findById(1L)).thenReturn(Optional.empty());
+        Mockito.when(cardInfoRepository.findById(cardId)).thenReturn(Optional.empty());
 
         Assertions.assertThrows(CardNotFoundException.class,
-                () -> cardInfoService.getCardById(1L));
+                () -> cardInfoService.getCardById(cardId, userId));
     }
 
     @Test
@@ -150,83 +164,102 @@ class CardInfoServiceTest {
     @Test
     void updateCardShouldUpdateWhenCardValid() {
         Long id = 1L;
+        Long userId = 1L;
+
         CardInfoUpdateDTO updateDTO = new CardInfoUpdateDTO();
         updateDTO.setNumber("1122334455667788");
 
         User user = new User();
-        user.setId(1L);
+        user.setId(userId);
 
         CardInfo existingCard = new CardInfo();
         existingCard.setUser(user);
+        existingCard.setNumber("oldNumber");
 
         CardInfo updatedCard = new CardInfo();
         updatedCard.setNumber("1122334455667788");
         CardInfoResponseDTO responseDTO = new CardInfoResponseDTO();
 
         Mockito.when(cardInfoRepository.findById(id)).thenReturn(Optional.of(existingCard));
-        Mockito.when(cardInfoRepository.existsByUserIdAndNumber(1L, "1122334455667788")).thenReturn(false);
+        Mockito.when(cardInfoRepository.existsByUserIdAndNumber(userId, "1122334455667788")).thenReturn(false);
         Mockito.when(cardInfoRepository.save(existingCard)).thenReturn(updatedCard);
         Mockito.when(cardInfoMapper.cardInfoToCardInfoResponseDTO(updatedCard)).thenReturn(responseDTO);
 
-        CardInfoResponseDTO result = cardInfoService.updateCard(id, updateDTO);
+        CardInfoResponseDTO result = cardInfoService.updateCard(id, updateDTO, userId);
 
         Assertions.assertEquals(responseDTO, result);
         Mockito.verify(cardInfoMapper).updateCardInfoFromCardInfoUpdateDTO(updateDTO, existingCard);
-        Mockito.verify(userCacheService).cacheEvictUserById(1L);
+        Mockito.verify(userCacheService).cacheEvictUserById(userId);
     }
 
     @Test
     void updateCardShouldThrowWhenCardNotFound() {
-        Mockito.when(cardInfoRepository.findById(1L)).thenReturn(Optional.empty());
+        Long id = 1L;
+        Long userId = 1L;
+        CardInfoUpdateDTO updateDTO = new CardInfoUpdateDTO();
+
+        Mockito.when(cardInfoRepository.findById(id)).thenReturn(Optional.empty());
 
         Assertions.assertThrows(CardNotFoundException.class,
-                () -> cardInfoService.updateCard(1L, new CardInfoUpdateDTO()));
+                () -> cardInfoService.updateCard(id, updateDTO, userId));
+
         Mockito.verifyNoInteractions(userCacheService);
     }
 
     @Test
     void updateCardShouldThrowWhenUserHasCardWithSameNumber() {
         Long id = 1L;
+        Long userId = 1L;
+
         CardInfoUpdateDTO updateDTO = new CardInfoUpdateDTO();
         updateDTO.setNumber("1111222233334444");
 
         User user = new User();
-        user.setId(1L);
+        user.setId(userId);
+
         CardInfo existing = new CardInfo();
         existing.setUser(user);
+        existing.setNumber("oldNumber"); // чтобы сравнение прошло и пошла проверка на дубликаты
 
         Mockito.when(cardInfoRepository.findById(id)).thenReturn(Optional.of(existing));
-        Mockito.when(cardInfoRepository.existsByUserIdAndNumber(1L, "1111222233334444")).thenReturn(true);
+        Mockito.when(cardInfoRepository.existsByUserIdAndNumber(userId, "1111222233334444")).thenReturn(true);
 
         Assertions.assertThrows(UserAlreadyHasTheCardWithTheSameNumberException.class,
-                () -> cardInfoService.updateCard(id, updateDTO));
+                () -> cardInfoService.updateCard(id, updateDTO, userId));
+
         Mockito.verifyNoInteractions(userCacheService);
     }
 
     @Test
     void deleteCardShouldDeleteWhenExists() {
         Long id = 1L;
+        Long userId = 2L;
+
         User user = new User();
-        user.setId(2L);
+        user.setId(userId);
         CardInfo card = new CardInfo();
         card.setUser(user);
 
         Mockito.when(cardInfoRepository.findById(id)).thenReturn(Optional.of(card));
 
-        cardInfoService.deleteCardById(id);
+        cardInfoService.deleteCardById(id, userId);
 
         Mockito.verify(cardInfoRepository).deleteById(id);
-        Mockito.verify(userCacheService).cacheEvictUserById(2L);
+        Mockito.verify(userCacheService).cacheEvictUserById(userId);
     }
+
 
     @Test
     void deleteCardShouldThrowWhenNotFound() {
         Long id = 1L;
+        Long userId = 2L;
+
         Mockito.when(cardInfoRepository.findById(id)).thenReturn(Optional.empty());
 
         Assertions.assertThrows(CardNotFoundException.class,
-                () -> cardInfoService.deleteCardById(id));
+                () -> cardInfoService.deleteCardById(id, userId));
 
         Mockito.verifyNoInteractions(userCacheService);
     }
+
 }
