@@ -15,21 +15,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-
 
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @Testcontainers
@@ -59,11 +51,6 @@ public class CardInfoControllerIT extends BaseIT {
 
     private User user = new User();
 
-    private RequestPostProcessor mockUser(Long userId) {
-        UserDetails userDetails = new org.springframework.security.core.userdetails.User(userId.toString(), "", List.of());
-        return user(userDetails);
-    }
-
     @BeforeEach
     void setup() {
         userRepository.deleteAll();
@@ -82,11 +69,10 @@ public class CardInfoControllerIT extends BaseIT {
 
         @Test
         void createCardInfoShouldReturnStatus201CreatedAndCardInfoWhenCreateCardInfoWithValidData() throws Exception {
-
             CardInfoCreateDTO createDTO = createCardInfoCreateDTO("1111222233334444", "V R", "12/25");
 
             mockMvc.perform(post("/cardinfo")
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(createDTO)))
                     .andExpect(status().isCreated())
@@ -98,11 +84,10 @@ public class CardInfoControllerIT extends BaseIT {
 
         @Test
         void createCardInfoShouldReturnStatus400BadRequestWhenCreateCardInfoWithInvalidData() throws Exception {
-
             CardInfoCreateDTO createDTO = createCardInfoCreateDTO("1112233334444", "V R", "12/25");
 
             mockMvc.perform(post("/cardinfo")
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(createDTO)))
                     .andExpect(status().isBadRequest());
@@ -113,12 +98,12 @@ public class CardInfoControllerIT extends BaseIT {
             CardInfoCreateDTO createDTO = createCardInfoCreateDTO("1111222233334444", "V R", "12/25");
 
             mockMvc.perform(post("/cardinfo")
-                            .with(mockUser(user.getId()))
+                    .header("X-User-Id", user.getId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(createDTO)));
 
             mockMvc.perform(post("/cardinfo")
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(createDTO)))
                     .andExpect(status().isConflict());
@@ -129,7 +114,7 @@ public class CardInfoControllerIT extends BaseIT {
             CardInfoCreateDTO createDTO = createCardInfoCreateDTO("1111222233334444", "V R", "12/25");
 
             mockMvc.perform(post("/cardinfo")
-                            .with(mockUser(user.getId()+1))
+                            .header("X-User-Id", user.getId() + 1)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(createDTO)))
                     .andExpect(status().isNotFound());
@@ -141,7 +126,7 @@ public class CardInfoControllerIT extends BaseIT {
             CardInfoCreateDTO createDTO2 = createCardInfoCreateDTO("1111222233335555", "V R", "12/25");
 
             mockMvc.perform(post("/cardinfo")
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(createDTO)))
                     .andExpect(status().isCreated())
@@ -149,7 +134,7 @@ public class CardInfoControllerIT extends BaseIT {
                     .andExpect(jsonPath("$.number").value("1111222233334444"));
 
             mockMvc.perform(post("/cardinfo")
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(createDTO2)))
                     .andExpect(status().isCreated())
@@ -174,18 +159,19 @@ public class CardInfoControllerIT extends BaseIT {
 
         @Test
         void getCardInfoByIdShouldReturnStatus200OkAndCardInfo() throws Exception {
-            mockMvc.perform(get("/cardinfo/{id}", savedCardInfo.getId()).with(mockUser(user.getId())))
+            mockMvc.perform(get("/cardinfo/{id}", savedCardInfo.getId())
+                            .header("X-User-Id", user.getId()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.userId").value(user.getId()))
                     .andExpect(jsonPath("$.number").value("1111222233334444"))
                     .andExpect(jsonPath("$.holder").value("V R"))
                     .andExpect(jsonPath("$.expirationDate").value("12/25"));
-
         }
 
         @Test
         void getCardInfoByIdShouldReturnStatus404NotFoundWhenIdDoesNotExist() throws Exception {
-            mockMvc.perform(get("/cardinfo/{id}", 15L).with(mockUser(user.getId())))
+            mockMvc.perform(get("/cardinfo/{id}", 15L)
+                            .header("X-User-Id", user.getId()))
                     .andExpect(status().isNotFound());
         }
 
@@ -200,7 +186,7 @@ public class CardInfoControllerIT extends BaseIT {
 
             mockMvc.perform(get("/cardinfo/ids")
                             .param("ids", savedCardInfo.getId() + "," + saved2.getId())
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(2))
@@ -212,7 +198,7 @@ public class CardInfoControllerIT extends BaseIT {
         void getCardInfoByIdsShouldReturnStatus200OkAndCardInfoListWhenSomeCardInfoIdsInvalid() throws Exception {
             mockMvc.perform(get("/cardinfo/ids")
                             .param("ids", savedCardInfo.getId() + "," + 78)
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(1))
@@ -239,7 +225,7 @@ public class CardInfoControllerIT extends BaseIT {
             CardInfoUpdateDTO updateDTO = createCardInfoUpdateDTO("1111222233338844", "K R", "10/25");
 
             mockMvc.perform(patch("/cardinfo/{id}", savedCardInfo.getId())
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(updateDTO)))
                     .andExpect(status().isOk())
@@ -253,7 +239,7 @@ public class CardInfoControllerIT extends BaseIT {
             CardInfoUpdateDTO updateDTO = createCardInfoUpdateDTO(null, "K R", null);
 
             mockMvc.perform(patch("/cardinfo/{id}", savedCardInfo.getId())
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(updateDTO)))
                     .andExpect(status().isOk())
@@ -266,14 +252,14 @@ public class CardInfoControllerIT extends BaseIT {
             CardInfoUpdateDTO updateDTO = createCardInfoUpdateDTO("111122223844", "K R", "10/25");
 
             mockMvc.perform(patch("/cardinfo/{id}", savedCardInfo.getId())
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(updateDTO)))
                     .andExpect(status().isBadRequest());
         }
 
         @Test
-        void updateCardInfoShouldReturnStatus409ConflictWhenUserAlreadyHasCardWhitSameNumber() throws Exception {
+        void updateCardInfoShouldReturnStatus409ConflictWhenUserAlreadyHasCardWithSameNumber() throws Exception {
             CardInfoCreateDTO createDTO2 = createCardInfoCreateDTO("1111222233335555", "V R", "12/25");
 
             CardInfo cardInfo2 = cardInfoMapper.cardInfoCreateDTOToCardInfo(createDTO2);
@@ -284,7 +270,7 @@ public class CardInfoControllerIT extends BaseIT {
             CardInfoUpdateDTO updateDTO = createCardInfoUpdateDTO("1111222233335555", null, null);
 
             mockMvc.perform(patch("/cardinfo/{id}", savedCardInfo.getId())
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(updateDTO)))
                     .andExpect(status().isConflict());
@@ -295,7 +281,7 @@ public class CardInfoControllerIT extends BaseIT {
             CardInfoUpdateDTO updateDTO = createCardInfoUpdateDTO("1111222233334444", "K R", "10/25");
 
             mockMvc.perform(patch("/cardinfo/{id}", savedCardInfo.getId() + 1)
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(updateDTO)))
                     .andExpect(status().isNotFound());
@@ -319,14 +305,14 @@ public class CardInfoControllerIT extends BaseIT {
         @Test
         void deleteCardByIdShouldReturnStatus204NoContent() throws Exception {
             mockMvc.perform(delete("/cardinfo/{id}", savedCardInfo.getId())
-                            .with(mockUser(user.getId())))
+                            .header("X-User-Id", user.getId()))
                     .andExpect(status().isNoContent());
         }
 
         @Test
         void deleteCardInfoByIdShouldReturnStatus404NotFoundWhenIdDoesNotExists() throws Exception {
             mockMvc.perform(delete("/cardinfo/{id}", savedCardInfo.getId() + 1)
-                            .with(mockUser(user.getId())))
+                            .header("X-User-Id", user.getId()))
                     .andExpect(status().isNotFound());
         }
     }
@@ -348,9 +334,8 @@ public class CardInfoControllerIT extends BaseIT {
             savedCardInfo = cardInfoRepository.save(cardInfo);
 
             mockMvc.perform(get("/user/{id}", user.getId())
-                            .with(mockUser(user.getId())))
+                            .header("X-User-Id", user.getId()))
                     .andExpect(status().isOk());
-
         }
 
         @Test
@@ -358,7 +343,7 @@ public class CardInfoControllerIT extends BaseIT {
             CardInfoCreateDTO createDTO = createCardInfoCreateDTO("0000222233334444", "V R", "12/25");
 
             mockMvc.perform(post("/cardinfo")
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(createDTO)))
                     .andExpect(status().isCreated());
@@ -371,7 +356,7 @@ public class CardInfoControllerIT extends BaseIT {
             CardInfoUpdateDTO updateDTO = createCardInfoUpdateDTO(null, "Ver", null);
 
             mockMvc.perform(patch("/cardinfo/{id}", savedCardInfo.getId())
-                            .with(mockUser(user.getId()))
+                            .header("X-User-Id", user.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(updateDTO)))
                     .andExpect(status().isOk());
@@ -382,11 +367,10 @@ public class CardInfoControllerIT extends BaseIT {
         @Test
         void deleteCardShouldEvictUserInCache() throws Exception {
             mockMvc.perform(delete("/cardinfo/{id}", savedCardInfo.getId())
-                            .with(mockUser(user.getId())))
+                            .header("X-User-Id", user.getId()))
                     .andExpect(status().isNoContent());
 
             Assertions.assertFalse(stringRedisTemplate.hasKey("users::" + user.getId()));
         }
     }
 }
-
