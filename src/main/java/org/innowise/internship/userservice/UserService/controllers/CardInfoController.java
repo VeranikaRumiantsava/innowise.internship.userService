@@ -2,6 +2,7 @@ package org.innowise.internship.userservice.UserService.controllers;
 
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.innowise.internship.userservice.UserService.dto.cardInfo.CardInfoResponseDTO;
@@ -46,34 +47,56 @@ public class CardInfoController {
         return id;
     }
 
-    @PostMapping
-    public ResponseEntity<CardInfoResponseDTO> createCardInfo(@RequestBody @Valid CardInfoCreateDTO cardInfoCreateDTO) {
+    private Long getUserIdFromHeader(HttpServletRequest request) {
+        String userIdHeader = request.getHeader("X-User-Id");
+        if (userIdHeader == null) {
+            throw new IllegalArgumentException("X-User-Id header is missing");
+        }
+        try {
+            return Long.parseLong(userIdHeader);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid X-User-Id header: " + userIdHeader);
+        }
+    }
 
-        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.createCard(cardInfoCreateDTO, getIdFromAuthentication());
+    @PostMapping
+    public ResponseEntity<CardInfoResponseDTO> createCardInfo(
+            @RequestBody @Valid CardInfoCreateDTO cardInfoCreateDTO,
+            HttpServletRequest request) {
+
+        Long userId = getUserIdFromHeader(request);
+        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.createCard(cardInfoCreateDTO, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(cardInfoResponseDTO);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CardInfoResponseDTO> getCardInfoById(@PathVariable Long id) {
-        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.getCardById(id, getIdFromAuthentication());
+    public ResponseEntity<CardInfoResponseDTO> getCardInfoById(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+
+        Long userId = getUserIdFromHeader(request);
+        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.getCardById(id, userId);
         return ResponseEntity.ok(cardInfoResponseDTO);
     }
 
-    @GetMapping("/ids")
-    public ResponseEntity<List<CardInfoResponseDTO>> getCardInfoListByIds(@RequestParam List<Long> ids) {
-        List<CardInfoResponseDTO> cards = cardInfoService.getCardsByIds(ids);
-        return ResponseEntity.ok(cards);
-    }
-
     @PatchMapping("/{id}")
-    public ResponseEntity<CardInfoResponseDTO> updateCardInfoById(@PathVariable Long id, @RequestBody @Valid CardInfoUpdateDTO cardInfoUpdateDTO) {
-        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.updateCard(id, cardInfoUpdateDTO, getIdFromAuthentication());
+    public ResponseEntity<CardInfoResponseDTO> updateCardInfoById(
+            @PathVariable Long id,
+            @RequestBody @Valid CardInfoUpdateDTO cardInfoUpdateDTO,
+            HttpServletRequest request) {
+
+        Long userId = getUserIdFromHeader(request);
+        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.updateCard(id, cardInfoUpdateDTO, userId);
         return ResponseEntity.ok(cardInfoResponseDTO);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCardInfoById(@PathVariable Long id) {
-        cardInfoService.deleteCardById(id, getIdFromAuthentication());
+    public ResponseEntity<Void> deleteCardInfoById(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+
+        Long userId = getUserIdFromHeader(request);
+        cardInfoService.deleteCardById(id, userId);
         return ResponseEntity.noContent().build();
     }
 }
