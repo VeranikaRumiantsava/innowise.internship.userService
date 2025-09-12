@@ -27,6 +27,9 @@ import org.innowise.internship.userservice.UserService.services.cardinfo.CardInf
 
 import lombok.RequiredArgsConstructor;
 
+
+
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/cardinfo")
@@ -56,44 +59,35 @@ public class CardInfoController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<CardInfoResponseDTO> createCardInfo(
-            @RequestBody @Valid CardInfoCreateDTO cardInfoCreateDTO,
-            HttpServletRequest request) {
 
-        Long userId = getUserIdFromHeader(request);
-        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.createCard(cardInfoCreateDTO, userId);
+    @PostMapping
+    public ResponseEntity<CardInfoResponseDTO> createCardInfo(@RequestBody @Valid CardInfoCreateDTO cardInfoCreateDTO) {
+
+        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.createCard(cardInfoCreateDTO, getIdFromAuthentication());
         return ResponseEntity.status(HttpStatus.CREATED).body(cardInfoResponseDTO);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CardInfoResponseDTO> getCardInfoById(
-            @PathVariable Long id,
-            HttpServletRequest request) {
-
-        Long userId = getUserIdFromHeader(request);
-        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.getCardById(id, userId);
+    public ResponseEntity<CardInfoResponseDTO> getCardInfoById(@PathVariable Long id) {
+        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.getCardById(id, getIdFromAuthentication());
         return ResponseEntity.ok(cardInfoResponseDTO);
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<CardInfoResponseDTO> updateCardInfoById(
-            @PathVariable Long id,
-            @RequestBody @Valid CardInfoUpdateDTO cardInfoUpdateDTO,
-            HttpServletRequest request) {
+    @GetMapping("/ids")
+    public ResponseEntity<List<CardInfoResponseDTO>> getCardInfoListByIds(@RequestParam List<Long> ids) {
+        List<CardInfoResponseDTO> cards = cardInfoService.getCardsByIds(ids);
+        return ResponseEntity.ok(cards);
+    }
 
-        Long userId = getUserIdFromHeader(request);
-        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.updateCard(id, cardInfoUpdateDTO, userId);
+    @PatchMapping("/{id}")
+    public ResponseEntity<CardInfoResponseDTO> updateCardInfoById(@PathVariable Long id, @RequestBody @Valid CardInfoUpdateDTO cardInfoUpdateDTO) {
+        CardInfoResponseDTO cardInfoResponseDTO = cardInfoService.updateCard(id, cardInfoUpdateDTO, getIdFromAuthentication());
         return ResponseEntity.ok(cardInfoResponseDTO);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCardInfoById(
-            @PathVariable Long id,
-            HttpServletRequest request) {
-
-        Long userId = getUserIdFromHeader(request);
-        cardInfoService.deleteCardById(id, userId);
+    public ResponseEntity<Void> deleteCardInfoById(@PathVariable Long id) {
+        cardInfoService.deleteCardById(id, getIdFromAuthentication());
         return ResponseEntity.noContent().build();
     }
 }
