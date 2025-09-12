@@ -27,9 +27,6 @@ import org.innowise.internship.userservice.UserService.services.cardinfo.CardInf
 
 import lombok.RequiredArgsConstructor;
 
-
-
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/cardinfo")
