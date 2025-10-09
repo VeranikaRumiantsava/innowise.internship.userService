@@ -2,6 +2,7 @@ package org.innowise.internship.userservice.UserService.controllers;
 
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.innowise.internship.userservice.UserService.dto.cardInfo.CardInfoResponseDTO;
@@ -45,6 +46,19 @@ public class CardInfoController {
         }
         return id;
     }
+
+    private Long getUserIdFromHeader(HttpServletRequest request) {
+        String userIdHeader = request.getHeader("X-User-Id");
+        if (userIdHeader == null) {
+            throw new IllegalArgumentException("X-User-Id header is missing");
+        }
+        try {
+            return Long.parseLong(userIdHeader);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid X-User-Id header: " + userIdHeader);
+        }
+    }
+
 
     @PostMapping
     public ResponseEntity<CardInfoResponseDTO> createCardInfo(@RequestBody @Valid CardInfoCreateDTO cardInfoCreateDTO) {

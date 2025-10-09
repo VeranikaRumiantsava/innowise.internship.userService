@@ -3,7 +3,6 @@ package org.innowise.internship.userservice.UserService.dto.cardInfo;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,9 +14,6 @@ import lombok.Setter;
 @Setter
 @Getter
 public class CardInfoCreateDTO {
-
-//    @NotNull(message = "User ID must not be null")
-//    private Long userId;
 
     @NotNull(message = "Number card must not be null")
     @Pattern(regexp = "^\\d{16}$", message = "Card number must be exactly 16 digits")

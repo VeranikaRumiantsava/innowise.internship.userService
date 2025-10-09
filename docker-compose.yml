@@ -1,37 +1,47 @@
 services:
-  app:
+  userservice:
     image: user_service:latest
     build: .
     ports:
       - "8081:8080"
     depends_on:
-      postgres:
+      postgres_userservice:
         condition: service_healthy
       redis:
         condition: service_healthy
     environment:
-      DB_HOST: postgres
+      DB_HOST: postgres_userservice
       DB_PORT: 5432
       DB_USER: rumronya
       DB_PASSWORD: password
+      DB_NAME: users
+
       REDIS_HOST: redis
       REDIS_PORT: 6379
 
-  postgres:
+    networks:
+      - app_network
+
+
+  postgres_userservice:
     image: postgres:15
     environment:
       POSTGRES_DB: users
       POSTGRES_USER: rumronya
       POSTGRES_PASSWORD: password
     ports:
-      - "5432:5432"
+      - "5430:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata_userservice:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U rumronya" ]
+      test: ["CMD-SHELL", "pg_isready -U rumronya -d users"]
       interval: 5s
       timeout: 3s
       retries: 5
+
+    networks:
+      - app_network
+
 
   redis:
     image: redis:7
@@ -45,5 +55,13 @@ services:
       timeout: 3s
       retries: 5
 
+    networks:
+      - app_network
+
+
 volumes:
-  pgdata:
+  pgdata_userservice:
+
+networks:
+  app_network:
+    external: true

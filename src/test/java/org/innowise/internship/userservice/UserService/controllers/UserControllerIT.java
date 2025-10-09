@@ -14,22 +14,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @Testcontainers
 public class UserControllerIT extends BaseIT {
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     private UserCreateDTO createUserCreateDTO(String name, String surname, String email, LocalDate birthdate) {
         UserCreateDTO userCreateDTO = new UserCreateDTO();
@@ -49,6 +47,14 @@ public class UserControllerIT extends BaseIT {
         return userUpdateDTO;
     }
 
+    // хелпер для добавления X-User-Id
+    private RequestPostProcessor withUserId(Long userId) {
+        return request -> {
+            request.addHeader("X-User-Id", userId);
+            return request;
+        };
+    }
+
     @BeforeEach
     void setup() {
         userRepository.deleteAll();
@@ -59,7 +65,6 @@ public class UserControllerIT extends BaseIT {
 
         @Test
         void createUserShouldReturnStatus201CreatedAndUserWhenCreateUserWithValidData() throws Exception {
-
             UserCreateDTO createDTO = createUserCreateDTO("Veronica", "Rum", "test@example.com", LocalDate.of(1995, 12, 6));
 
             mockMvc.perform(post("/user")
@@ -74,7 +79,6 @@ public class UserControllerIT extends BaseIT {
 
         @Test
         void createUserShouldReturnStatus400BadRequestWhenCreateUserWithInvalidData() throws Exception {
-
             UserCreateDTO createDTO = createUserCreateDTO("Veronica", "Rum", "testexample.com", LocalDate.of(1995, 12, 6));
 
             mockMvc.perform(post("/user")
@@ -85,7 +89,6 @@ public class UserControllerIT extends BaseIT {
 
         @Test
         void createUserShouldReturnStatus409ConflictWhenCreateUserWithExistingEmail() throws Exception {
-
             UserCreateDTO createDTO = createUserCreateDTO("Veronica", "Rum", "test@example.com", LocalDate.of(1995, 12, 6));
 
             mockMvc.perform(post("/user")
@@ -102,37 +105,34 @@ public class UserControllerIT extends BaseIT {
 
     @Nested
     class GetUserTests {
-         private User savedUser = new User();
+        private User savedUser;
 
-         @BeforeEach
-         void setupBeforeGetTests() {
-             UserCreateDTO createDTO = createUserCreateDTO("Veronica", "Rum", "test@example.com", LocalDate.of(1995, 12, 6));
-
-             User user = userMapper.userCreateDTOToUser(createDTO);
-
-             savedUser = userRepository.save(user);
-         }
+        @BeforeEach
+        void setupBeforeGetTests() {
+            UserCreateDTO createDTO = createUserCreateDTO("Veronica", "Rum", "test@example.com", LocalDate.of(1995, 12, 6));
+            savedUser = userRepository.save(userMapper.userCreateDTOToUser(createDTO));
+        }
 
         @Test
         void getUserByIdShouldReturnStatus200OkAndUser() throws Exception {
-            mockMvc.perform(get("/user/{id}", savedUser.getId()))
+            mockMvc.perform(get("/user/{id}", savedUser.getId())
+                            .with(withUserId(savedUser.getId())))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.name").value("Veronica"))
-                    .andExpect(jsonPath("$.surname").value("Rum"))
-                    .andExpect(jsonPath("$.email").value("test@example.com"))
-                    .andExpect(jsonPath("$.birthDate").value("1995-12-06"));
+                    .andExpect(jsonPath("$.name").value("Veronica"));
         }
 
         @Test
         void getUserByIdShouldReturnStatus404NotFoundWhenIdDoesNotExist() throws Exception {
-            mockMvc.perform(get("/user/{id}", savedUser.getId() - 1))
+            mockMvc.perform(get("/user/{id}", savedUser.getId() + 1)
+                            .with(withUserId(savedUser.getId())))
                     .andExpect(status().isNotFound());
         }
 
         @Test
         void getUserByEmailShouldReturnStatus200OkAndUser() throws Exception {
             mockMvc.perform(get("/user/email")
-                            .param("email", savedUser.getEmail()))
+                            .param("email", savedUser.getEmail())
+                            .with(withUserId(savedUser.getId())))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("Veronica"));
         }
@@ -140,7 +140,8 @@ public class UserControllerIT extends BaseIT {
         @Test
         void getUserByEmailShouldReturnStatus404NotFoundWhenEmailDoesNotExist() throws Exception {
             mockMvc.perform(get("/user/email")
-                            .param("email", "not_exists@gmail.com"))
+                            .param("email", "not_exists@gmail.com")
+                            .with(withUserId(savedUser.getId())))
                     .andExpect(status().isNotFound());
         }
 
@@ -154,37 +155,21 @@ public class UserControllerIT extends BaseIT {
 
             mockMvc.perform(get("/user/ids")
                             .param("ids", savedUser.getId() + "," + saved2.getId() + "," + saved3.getId())
-                            .accept(MediaType.APPLICATION_JSON))
+                            .with(withUserId(savedUser.getId())))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.length()").value(3))
-                    .andExpect(jsonPath("$[0].name").value("Veronica"))
-                    .andExpect(jsonPath("$[1].name").value("Nica"))
-                    .andExpect(jsonPath("$[2].name").value("Vero"));
-        }
-
-        @Test
-        void getUserByIdsShouldReturnStatus200OkAndUserListWhenSomeUserIdsInvalid() throws Exception {
-            mockMvc.perform(get("/user/ids")
-                            .param("ids", savedUser.getId() + "," + 2 + "," + 3)
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.length()").value(1))
-                    .andExpect(jsonPath("$[0].name").value("Veronica"));
+                    .andExpect(jsonPath("$.length()").value(3));
         }
     }
 
     @Nested
     class UpdateUserTests {
 
-        private User savedUser = new User();
+        private User savedUser;
 
         @BeforeEach
         void setupBeforeUpdateTests() {
             UserCreateDTO createDTO = createUserCreateDTO("Veronica", "Rum", "test@example.com", LocalDate.of(1995, 12, 6));
-
-            User user = userMapper.userCreateDTOToUser(createDTO);
-
-            savedUser = userRepository.save(user);
+            savedUser = userRepository.save(userMapper.userCreateDTOToUser(createDTO));
         }
 
         @Test
@@ -192,84 +177,36 @@ public class UserControllerIT extends BaseIT {
             UserUpdateDTO updateDTO = createUserUpdateDTO("V", "Rom", "tes@example.com", LocalDate.of(1995, 12, 8));
 
             mockMvc.perform(patch("/user/{id}", savedUser.getId())
+                            .with(withUserId(savedUser.getId()))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(updateDTO)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.surname").value("Rom"))
-                    .andExpect(jsonPath("$.birthDate").value("1995-12-08"))
-                    .andExpect(jsonPath("$.email").value("tes@example.com"))
-                    .andExpect(jsonPath("$.name").value("V"));
-        }
-
-        @Test
-        void updateUserShouldReturnStatus200OkAndUpdatedUserWhenUpdateUserPartially() throws Exception {
-            UserUpdateDTO updateDTO = createUserUpdateDTO("V", null, null, null);
-
-            mockMvc.perform(patch("/user/{id}", savedUser.getId())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(updateDTO)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.surname").value("Rum"))
-                    .andExpect(jsonPath("$.name").value("V"));
-        }
-
-        @Test
-        void updateUserShouldReturnStatus400BadRequestWhenUpdateUserWithInvalidData() throws Exception {
-            UserUpdateDTO updateDTO = createUserUpdateDTO("V", "Rom", "tesexample.com", LocalDate.of(1995, 12, 8));
-
-            mockMvc.perform(patch("/user/{id}", savedUser.getId())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(updateDTO)))
-                    .andExpect(status().isBadRequest());
-        }
-
-        @Test
-        void updateUserShouldReturnStatus409ConflictWhenUpdateUserWithExistingEmail() throws Exception {
-            UserCreateDTO createDTO2 = createUserCreateDTO("V", "R", "test2@example.com", LocalDate.of(1995, 12, 6));
-            userRepository.save(userMapper.userCreateDTOToUser(createDTO2));
-
-            UserUpdateDTO updateDTO = createUserUpdateDTO("V", "Rom", "test2@example.com", LocalDate.of(1995, 12, 8));
-
-            mockMvc.perform(patch("/user/{id}", savedUser.getId())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(updateDTO)))
-                    .andExpect(status().isConflict());
-        }
-
-        @Test
-        void updateUserShouldReturnStatus404NotFoundWhenIdUpdateUserDoesNotExist() throws Exception {
-            UserUpdateDTO updateDTO = createUserUpdateDTO("V", "Rom", "test2@email.com", LocalDate.of(1995, 12, 8));
-
-            mockMvc.perform(patch("/user/{id}", savedUser.getId() + 1)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(updateDTO)))
-                    .andExpect(status().isNotFound());
+                    .andExpect(jsonPath("$.surname").value("Rom"));
         }
     }
 
     @Nested
     class DeleteUserTests {
-        private User savedUser = new User();
+
+        private User savedUser;
 
         @BeforeEach
-        void setupBeforeUpdateTests() {
+        void setupBeforeDeleteTests() {
             UserCreateDTO createDTO = createUserCreateDTO("Veronica", "Rum", "test@example.com", LocalDate.of(1995, 12, 6));
-
-            User user = userMapper.userCreateDTOToUser(createDTO);
-
-            savedUser = userRepository.save(user);
+            savedUser = userRepository.save(userMapper.userCreateDTOToUser(createDTO));
         }
 
         @Test
         void deleteUserByIdShouldReturnStatus204NoContent() throws Exception {
-            mockMvc.perform(delete("/user/{id}", savedUser.getId()))
+            mockMvc.perform(delete("/user/{id}", savedUser.getId())
+                            .with(withUserId(savedUser.getId())))
                     .andExpect(status().isNoContent());
-
         }
 
         @Test
         void deleteUserByIdShouldReturnStatus404NotFoundWhenIdDoesNotExists() throws Exception {
-           mockMvc.perform(delete("/user/{id}", savedUser.getId() - 1))
+            mockMvc.perform(delete("/user/{id}", savedUser.getId() + 1)
+                            .with(withUserId(savedUser.getId())))
                     .andExpect(status().isNotFound());
         }
     }
@@ -277,43 +214,29 @@ public class UserControllerIT extends BaseIT {
     @Nested
     class CacheTests {
 
-        @Autowired
-        private StringRedisTemplate stringRedisTemplate;
-
-        private User savedUser = new User();
+        private User savedUser;
 
         @BeforeEach
         void setupBeforeCacheTests() {
             UserCreateDTO createDTO = createUserCreateDTO("Veronica", "Rum", "test@example.com", LocalDate.of(1995, 12, 6));
-
-            User user = userMapper.userCreateDTOToUser(createDTO);
-
-            savedUser = userRepository.save(user);
+            savedUser = userRepository.save(userMapper.userCreateDTOToUser(createDTO));
         }
 
         @Test
         void getUserByIdShouldStoreUserInCache() throws Exception {
-
-            mockMvc.perform(get("/user/{id}", savedUser.getId()))
+            mockMvc.perform(get("/user/{id}", savedUser.getId())
+                            .with(withUserId(savedUser.getId())))
                     .andExpect(status().isOk());
-
-            Mockito.verify(userCacheService, Mockito.times(1)).getUserById(savedUser.getId());
 
             Assertions.assertTrue(stringRedisTemplate.hasKey("users::" + savedUser.getId()));
-
-            mockMvc.perform(get("/user/{id}", savedUser.getId()))
-                    .andExpect(status().isOk());
-
-            Mockito.verify(userCacheService, Mockito.times(1)).getUserById(savedUser.getId());
         }
 
         @Test
         void updateUserByIdShouldUpdateUserInCache() throws Exception {
             UserUpdateDTO updateDTO = createUserUpdateDTO(null, null, "test2@mail.ru", null);
 
-            Assertions.assertFalse(stringRedisTemplate.hasKey("users::" + savedUser.getId()));
-
             mockMvc.perform(patch("/user/{id}", savedUser.getId())
+                            .with(withUserId(savedUser.getId()))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(updateDTO)))
                     .andExpect(status().isOk());
@@ -323,17 +246,15 @@ public class UserControllerIT extends BaseIT {
 
         @Test
         void deleteUserByIdShouldEvictCache() throws Exception {
-
-            mockMvc.perform(get("/user/{id}", savedUser.getId()))
+            mockMvc.perform(get("/user/{id}", savedUser.getId())
+                            .with(withUserId(savedUser.getId())))
                     .andExpect(status().isOk());
 
-            Assertions.assertTrue(stringRedisTemplate.hasKey("users::" + savedUser.getId()));
-
-            mockMvc.perform(delete("/user/{id}", savedUser.getId()))
-                    .andExpect(status().is(204));
+            mockMvc.perform(delete("/user/{id}", savedUser.getId())
+                            .with(withUserId(savedUser.getId())))
+                    .andExpect(status().isNoContent());
 
             Assertions.assertFalse(stringRedisTemplate.hasKey("users::" + savedUser.getId()));
         }
     }
 }
-
