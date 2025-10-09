@@ -20,8 +20,10 @@ public class HeaderAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return request.getMethod().equalsIgnoreCase("POST")
-                && request.getRequestURI().equals("/user");
+        String path = request.getRequestURI();
+        return (request.getMethod().equalsIgnoreCase("POST") && path.equals("/user"))
+                || path.startsWith("/actuator/health")
+                || path.startsWith("/actuator/info");
     }
 
     @Override
